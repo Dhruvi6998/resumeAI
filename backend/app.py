@@ -4,16 +4,27 @@ from werkzeug.utils import secure_filename
 from sentence_transformers import SentenceTransformer, util
 import pdfplumber
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # ✅ Enable CORS for all routes
 
 # Upload folder
 app.config['UPLOAD_FOLDER'] = 'uploads'
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
-# Initialize model
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# Get frontend URL from environment (fallback = allow all)
+frontend_url = os.getenv("FRONTEND_URL", "*")
+
+# ✅ Enable CORS only for your frontend
+CORS(app, resources={r"/*": {"origins": frontend_url}})
+
+# Initialize model (force CPU for Render free tier)
+model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
 
 # ✅ Utility function to extract text from PDF
 def extract_text_from_pdf(pdf_path):
@@ -71,7 +82,8 @@ def screen_resumes():
         "irrelevant_resumes": irrelevant_resumes
     })
 
-if __name__ == '__main__':
-    if not os.path.exists('uploads'):
-        os.makedirs('uploads')
-    app.run(debug=True, port=5000)  # ✅ Make sure this runs on port 5000
+
+# ✅ Local dev only. Render will use Gunicorn with Procfile.
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
