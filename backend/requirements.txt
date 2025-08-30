@@ -17,3 +17,6 @@ nltk==3.9.1
 tqdm==4.66.5
 requests==2.32.3
 regex==2024.9.11
+
+# Production server
+gunicorn==23.0.0
